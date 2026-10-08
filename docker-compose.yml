@@ -9,6 +9,7 @@ services:
       - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U fleet -d fleet"]
       interval: 5s
