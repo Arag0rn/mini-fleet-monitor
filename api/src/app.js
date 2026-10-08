@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const config = require('./config');
+const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -11,15 +12,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
-
-app.use((err, req, res, next) => {
-  if (res.headersSent) return next(err);
-  const status = err.status || 500;
-  if (status >= 500) console.error(err);
-  res.status(status).json({ error: status >= 500 ? 'Internal server error' : err.message });
-});
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;
