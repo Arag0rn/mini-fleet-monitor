@@ -1,0 +1,27 @@
+{
+  "name": "mini-fleet-monitor-api",
+  "version": "1.0.0",
+  "description": "Mini-Fleet Monitor REST + WebSocket API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon --exec \"node --env-file-if-exists=../.env\" src/index.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.1",
+    "redis": "^6.3.0",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  }
+}
