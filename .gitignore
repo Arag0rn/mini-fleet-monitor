@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env*
+!.env.example
+*.log
+
+CLAUDE.md
+.claude/
+.playwright-mcp/
+REQUIREMENTS.ru.md
+TODO.md
