@@ -3,6 +3,7 @@ const cors = require('cors');
 const config = require('./config');
 const pool = require('./db/pool');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -17,6 +18,8 @@ app.get('/health', async (req, res) => {
     res.status(503).json({ status: 'unavailable' });
   }
 });
+
+app.use('/auth', authRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
