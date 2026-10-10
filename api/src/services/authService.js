@@ -21,4 +21,11 @@ async function login(email, password) {
   return { token, user: { id: user.id, email: user.email } };
 }
 
-module.exports = { login };
+function verifyToken(token) {
+  const payload = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] });
+  const id = Number(payload.sub);
+  if (!Number.isInteger(id) || id < 1) throw new HttpError(401, 'Invalid token');
+  return { id, email: payload.email };
+}
+
+module.exports = { login, verifyToken };
