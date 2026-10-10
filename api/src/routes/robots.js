@@ -6,5 +6,6 @@ const router = Router();
 
 router.use(requireAuth);
 router.get('/', robotController.list);
+router.post('/:id/move', robotController.move);
 
 module.exports = router;
