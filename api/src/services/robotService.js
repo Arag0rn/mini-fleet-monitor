@@ -39,4 +39,19 @@ async function moveRobot(id) {
   return rows[0];
 }
 
-module.exports = { listRobots, moveRobot };
+async function listRobotIds() {
+  const { rows } = await pool.query('SELECT id FROM robots ORDER BY id');
+  return rows.map((row) => row.id);
+}
+
+async function markIdleExcept(movedIds) {
+  const { rows } = await pool.query(
+    `UPDATE robots SET status = 'idle', updated_at = now()
+      WHERE status = 'moving' AND NOT (id = ANY($1::int[]))
+      RETURNING id, name, status, lat, lon, updated_at`,
+    [movedIds],
+  );
+  return rows;
+}
+
+module.exports = { listRobots, moveRobot, listRobotIds, markIdleExcept };
