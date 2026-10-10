@@ -5,3 +5,5 @@ if (!API_URL) {
 }
 
 export const WS_URL = `${API_URL.replace(/^http/, 'ws')}/ws`
+
+export const PATROL_AREA_CENTER = [12.470607, 51.339374]

@@ -1,3 +1,38 @@
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #e6e8e6;
+  --surface: #f4f5f4;
+  --ink: #1e2326;
+  --muted: #5a6367;
+  --line: #c9cdcc;
+  --signal: #f5c400;
+  --on-signal: #1e2326;
+  --danger: #b3261e;
+  --focus: #1e2326;
+  --map-filter: grayscale(1) contrast(0.9) brightness(1.05);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #1b2024;
+  --surface: #242a2f;
+  --ink: #f1ede4;
+  --muted: #a3acb1;
+  --line: #3a4248;
+  --signal: #f5c400;
+  --on-signal: #1e2326;
+  --danger: #ff8a7a;
+  --focus: #f5c400;
+  --map-filter: grayscale(1) invert(1) brightness(0.55) contrast(1.1);
+}
+
+:root {
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Mono', ui-monospace, monospace;
+}
+
 *,
 *::before,
 *::after {
@@ -12,5 +47,12 @@ body,
 }
 
 body {
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--font-body);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }

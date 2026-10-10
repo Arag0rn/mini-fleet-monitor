@@ -3,7 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#e6e8e6" />
     <link rel="icon" href="data:," />
+    <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      let theme = 'light'
+      try {
+        const saved = localStorage.getItem('theme')
+        if (saved === 'light' || saved === 'dark') theme = saved
+        else if (matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark'
+      } catch {}
+      document.documentElement.dataset.theme = theme
+      document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#1b2024' : '#e6e8e6'
+    </script>
     <title>Mini-Fleet Monitor</title>
   </head>
   <body>

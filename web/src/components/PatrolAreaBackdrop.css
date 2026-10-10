@@ -1,0 +1,8 @@
+.patrol-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.patrol-backdrop .ol-layer canvas {
+  filter: var(--map-filter);
+}
