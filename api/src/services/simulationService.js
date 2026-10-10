@@ -13,13 +13,12 @@ async function tick() {
     const ids = await robotService.listRobotIds();
     const movingIds = ids.filter(() => Math.random() < MOVE_PROBABILITY);
     const results = await Promise.allSettled(movingIds.map((id) => robotService.moveRobot(id)));
-    const moved = [];
     results.forEach((result, i) => {
-      if (result.status === 'fulfilled') moved.push(result.value);
-      else console.error(`Simulation move of robot ${movingIds[i]} failed:`, result.reason?.message ?? result.reason);
+      if (result.status === 'rejected') {
+        console.error(`Simulation move of robot ${movingIds[i]} failed:`, result.reason?.message ?? result.reason);
+      }
     });
-    const idled = await robotService.markIdleExcept(movingIds);
-    return { moved, idled };
+    await robotService.markIdleExcept(movingIds);
   } catch (err) {
     console.error('Simulation tick failed:', err.code ? `${err.code} ${err.message}` : err);
   } finally {

@@ -1,5 +1,6 @@
 const pool = require('../db/pool');
 const HttpError = require('../utils/httpError');
+const { publishRobotUpdates } = require('./eventService');
 
 const MIN_STEP_M = 10;
 const MAX_STEP_M = 50;
@@ -36,6 +37,7 @@ async function moveRobot(id) {
   const { north, east } = randomStep();
   const { rows } = await pool.query(MOVE_SQL, [id, north, east]);
   if (!rows[0]) throw new HttpError(404, 'Robot not found');
+  await publishRobotUpdates(rows);
   return rows[0];
 }
 
@@ -51,6 +53,7 @@ async function markIdleExcept(movedIds) {
       RETURNING id, name, status, lat, lon, updated_at`,
     [movedIds],
   );
+  await publishRobotUpdates(rows);
   return rows;
 }
 
