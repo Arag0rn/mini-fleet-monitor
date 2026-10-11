@@ -15,7 +15,7 @@ function RosterBody({ robots, status, onRetry, now }) {
   if (status === 'loading' && robots.length === 0) {
     return <p className="roster__note">Loading robots…</p>
   }
-  if (status === 'error') {
+  if (status === 'error' && robots.length === 0) {
     return (
       <div className="roster__note">
         <p>Could not load the robots. Check that the API is running.</p>

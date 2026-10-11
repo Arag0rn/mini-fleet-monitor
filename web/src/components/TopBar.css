@@ -18,6 +18,41 @@
   white-space: nowrap;
 }
 
+.topbar__connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 auto 0 0;
+  color: var(--muted);
+  font: 500 0.8rem/1 var(--font-mono);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.topbar__dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+}
+
+.topbar__connection[data-state='live'] {
+  color: var(--ink);
+}
+
+.topbar__connection[data-state='live'] .topbar__dot {
+  border-color: var(--signal);
+  background: var(--signal);
+}
+
+.topbar__connection[data-state='offline'] {
+  color: var(--danger);
+}
+
+.topbar__connection[data-state='offline'] .topbar__dot {
+  border-color: var(--danger);
+}
+
 .topbar__actions {
   display: flex;
   align-items: center;
