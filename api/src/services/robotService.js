@@ -1,31 +1,31 @@
 const pool = require('../db/pool');
 const HttpError = require('../utils/httpError');
-const { publishRobotUpdates } = require('./eventService');
+const { publishRobotUpdates, publishRobotMove } = require('./eventService');
 const robotCache = require('./robotCache');
+const patrolNetwork = require('./patrolNetwork');
 
 const MIN_STEP_M = 10;
 const MAX_STEP_M = 50;
 
+const LOCK_SQL = 'SELECT lat, lon, edge_from, edge_to, edge_offset_m FROM robots WHERE id = $1 FOR UPDATE';
+
+// clock_timestamp(), not now(): inside a transaction now() is the BEGIN time, which would not follow
+// the order in which moves got the row lock
 const MOVE_SQL = `
   WITH moved AS (
     UPDATE robots
-       SET lat = lat + $2 / 111320.0,
-           lon = lon + $3 / (111320.0 * cos(radians(lat))),
+       SET lat = $2, lon = $3, edge_from = $4, edge_to = $5, edge_offset_m = $6,
            status = 'moving',
-           updated_at = now()
+           updated_at = clock_timestamp()
      WHERE id = $1
     RETURNING id, name, status, lat, lon, updated_at
   ), history AS (
-    INSERT INTO robot_positions (robot_id, lat, lon)
-    SELECT id, lat, lon FROM moved
+    INSERT INTO robot_positions (robot_id, lat, lon, recorded_at)
+    SELECT id, lat, lon, updated_at FROM moved
   )
   SELECT * FROM moved`;
 
-function randomStep() {
-  const distance = MIN_STEP_M + Math.random() * (MAX_STEP_M - MIN_STEP_M);
-  const angle = Math.random() * 2 * Math.PI;
-  return { north: distance * Math.cos(angle), east: distance * Math.sin(angle) };
-}
+const randomDistance = () => MIN_STEP_M + Math.random() * (MAX_STEP_M - MIN_STEP_M);
 
 async function listRobots() {
   const cached = await robotCache.readRobots();
@@ -38,13 +38,34 @@ async function listRobots() {
   return { robots: rows, fromCache: false };
 }
 
+// Read-modify-write in one transaction: the row lock keeps the timer and a manual move from
+// walking the same robot from the same starting point.
 async function moveRobot(id) {
-  const { north, east } = randomStep();
-  const { rows } = await pool.query(MOVE_SQL, [id, north, east]);
-  if (!rows[0]) throw new HttpError(404, 'Robot not found');
+  const client = await pool.connect();
+  let moved;
+  let via;
+  let broken = false;
+  try {
+    await client.query('BEGIN');
+    const { rows: [robot] } = await client.query(LOCK_SQL, [id]);
+    if (!robot) throw new HttpError(404, 'Robot not found');
+    const next = patrolNetwork.advance(robot, randomDistance());
+    const { rows } = await client.query(MOVE_SQL, [id, next.lat, next.lon, next.from, next.to, next.offset]);
+    await client.query('COMMIT');
+    moved = rows[0];
+    via = next.via;
+  } catch (err) {
+    // A failed ROLLBACK means a dead connection: release(true) discards it instead of pooling it
+    await client.query('ROLLBACK').catch(() => {
+      broken = true;
+    });
+    throw err;
+  } finally {
+    client.release(broken);
+  }
   await robotCache.invalidateRobots();
-  await publishRobotUpdates(rows);
-  return rows[0];
+  await publishRobotMove(moved, via);
+  return moved;
 }
 
 async function listRobotIds() {

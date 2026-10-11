@@ -4,11 +4,13 @@ import FleetMap from '../components/FleetMap.jsx'
 import { useRobots } from '../robots/useRobots.js'
 import { useFleetSocket } from '../robots/useFleetSocket.js'
 import { useSimulation } from '../robots/useSimulation.js'
+import { usePatrolNetwork } from '../robots/usePatrolNetwork.js'
 import './DashboardPage.css'
 
 export default function DashboardPage() {
   const { robots, status, reload, resync, applyUpdate } = useRobots()
   const simulation = useSimulation()
+  const network = usePatrolNetwork()
   const connection = useFleetSocket({
     onRobot: applyUpdate,
     onSimulation: simulation.applyState,
@@ -24,7 +26,7 @@ export default function DashboardPage() {
       <main className="dashboard__body">
         <h1 className="dashboard__heading">Patrol Robots</h1>
         <div className="dashboard__map">
-          <FleetMap robots={robots} />
+          <FleetMap robots={robots} network={network} />
         </div>
         <RobotRoster robots={robots} status={status} onRetry={reload} simulation={simulation} />
       </main>

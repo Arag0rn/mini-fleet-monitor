@@ -26,7 +26,8 @@ Then open **http://localhost:8080** and sign in with **`admin@test.com` / `test1
 | Redis | `localhost:6379` | cache for `GET /robots` and Pub/Sub for live updates |
 
 All ports are bound to `127.0.0.1`. The database schema and the demo data (one user, eight robots)
-are created automatically on the first start. `docker compose down -v` resets everything.
+are created automatically on the first start. `docker compose down -v` resets everything; run it
+once after pulling a change to `db/*.sql`, since the scripts only run on an empty volume.
 
 `JWT_SECRET` falls back to a clearly labelled **demo-only** value so the stack starts from a clean
 checkout. Set your own in a `.env` file (see [`.env.example`](.env.example)) for anything beyond a
@@ -87,11 +88,12 @@ steel circles. The roster shows the same state as text: call sign, status, last 
 |---|---|---|---|
 | `POST` | `/auth/login` | — | `{ email, password }` → `{ token, user }` (JWT, 1 h) |
 | `GET` | `/robots` | Bearer | all robots |
-| `POST` | `/robots/:id/move` | Bearer | moves the robot 10–50 m in a random direction |
+| `POST` | `/robots/:id/move` | Bearer | moves the robot 10–50 m along the road network |
+| `GET` | `/patrol-network` | Bearer | the paths robots walk, as GeoJSON (drawn as a dashed backdrop) |
 | `GET` | `/simulation` | Bearer | `{ running }` |
 | `POST` | `/simulation/start`, `/simulation/stop` | Bearer | starts or stops the simulation; stopping sets every robot to `idle` |
 | `GET` | `/health` | — | 200 when PostgreSQL and Redis answer, otherwise 503 |
-| `WS` | `/ws?token=<jwt>` | JWT in query string | pushes `{"type":"robot.updated","robot":{…}}` and `{"type":"simulation.state","running":…}` |
+| `WS` | `/ws?token=<jwt>` | JWT in query string | pushes `{"type":"robot.updated","robot":{…},"via":[[lat,lon],…]}` (`via`: junctions passed, so the map follows the road) and `{"type":"simulation.state","running":…}` |
 
 The browser WebSocket API cannot send an `Authorization` header, so the token travels in the query
 string and is verified during the HTTP upgrade (invalid token → `401` before the socket opens).
@@ -116,6 +118,14 @@ string and is verified during the HTTP upgrade (invalid token → `401` before t
   the initial snapshot.
   With the simulation moving robots every 2 s the key is invalidated about once per tick, so the TTL
   mainly matters when the simulation is idle.
+- **Movement.** Ground patrol robots walk a road network built once from OpenStreetMap
+  (`api/scripts/build-patrol-network.js` → `api/src/data/patrolNetwork.json`, 526 nodes within 450 m
+  of the site). Each step is a random 10–50 m along the network; at a junction the next road is random,
+  with no U-turn except at a dead end. The robot's place (`edge_from`, `edge_to`, `edge_offset_m`) is
+  read and written in one transaction with a row lock. Map data © OpenStreetMap contributors, ODbL.
+- **Map.** The robot is animated along the junctions it passed, and the trail shows the last ~100 m
+  of its path along the road, fading with distance; a legend explains markers, trail and patrol paths.
+  After a reconnect the path in between is unknown, so the robot jumps and its trail starts afresh.
 - **Ordering.** Events and snapshots are merged by `updated_at`; an older message never overwrites a
   newer position.
 - **Start/Stop.** Transitions run one after another, so two tabs clicking at once always end in the

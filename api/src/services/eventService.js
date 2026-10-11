@@ -15,8 +15,13 @@ function publishRobotUpdates(robots) {
   return publish(robots.map((robot) => ({ type: 'robot.updated', robot })));
 }
 
+// `via` lists the junctions passed during a move, so clients can draw it along the road
+function publishRobotMove(robot, via) {
+  return publish([{ type: 'robot.updated', robot, via }]);
+}
+
 function publishSimulationState(running) {
   return publish([{ type: 'simulation.state', running }]);
 }
 
-module.exports = { FLEET_EVENTS_CHANNEL, publishRobotUpdates, publishSimulationState };
+module.exports = { FLEET_EVENTS_CHANNEL, publishRobotUpdates, publishRobotMove, publishSimulationState };

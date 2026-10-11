@@ -42,13 +42,14 @@ export function useRobots() {
 
   const resync = useCallback(() => setAttempt((n) => n + 1), [])
 
-  const applyUpdate = useCallback((robot) => {
+  // `via`: junctions passed during a move ([lat, lon] each), so the map can follow the road
+  const applyUpdate = useCallback((robot, via) => {
     setRobots((current) => {
       const index = current.findIndex((item) => item.id === robot.id)
       if (index === -1) return current
       if (!isNewer(robot, current[index])) return current
       const next = current.slice()
-      next[index] = robot
+      next[index] = via ? { ...robot, via } : robot
       return next
     })
   }, [])

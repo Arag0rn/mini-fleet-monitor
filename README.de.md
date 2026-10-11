@@ -27,7 +27,8 @@ Danach **http://localhost:8080** öffnen und mit **`admin@test.com` / `test123`*
 | Redis | `localhost:6379` | Cache für `GET /robots` und Pub/Sub für Live-Updates |
 
 Alle Ports sind an `127.0.0.1` gebunden. Schema und Demodaten (ein Benutzer, acht Roboter) werden
-beim ersten Start automatisch angelegt. `docker compose down -v` setzt alles zurück.
+beim ersten Start automatisch angelegt. `docker compose down -v` setzt alles zurück; nach einer
+Änderung an `db/*.sql` einmal ausführen, da die Skripte nur auf einem leeren Volume laufen.
 
 `JWT_SECRET` fällt auf einen ausdrücklich als **nur für die Demo** gekennzeichneten Wert zurück,
 damit der Stack direkt nach dem Klonen startet. Für alles über eine lokale Demo hinaus ein eigenes
@@ -90,11 +91,12 @@ Alter der Meldung.
 |---|---|---|---|
 | `POST` | `/auth/login` | — | `{ email, password }` → `{ token, user }` (JWT, 1 h) |
 | `GET` | `/robots` | Bearer | alle Roboter |
-| `POST` | `/robots/:id/move` | Bearer | bewegt den Roboter 10–50 m in eine zufällige Richtung |
+| `POST` | `/robots/:id/move` | Bearer | bewegt den Roboter 10–50 m entlang des Wegenetzes |
+| `GET` | `/patrol-network` | Bearer | die Wege der Roboter als GeoJSON (gestrichelt auf der Karte) |
 | `GET` | `/simulation` | Bearer | `{ running }` |
 | `POST` | `/simulation/start`, `/simulation/stop` | Bearer | startet oder stoppt die Simulation; beim Stoppen werden alle Roboter `idle` |
 | `GET` | `/health` | — | 200, wenn PostgreSQL und Redis antworten, sonst 503 |
-| `WS` | `/ws?token=<jwt>` | JWT im Query-String | sendet `{"type":"robot.updated","robot":{…}}` und `{"type":"simulation.state","running":…}` |
+| `WS` | `/ws?token=<jwt>` | JWT im Query-String | sendet `{"type":"robot.updated","robot":{…},"via":[[lat,lon],…]}` (`via`: passierte Kreuzungen, damit die Karte dem Weg folgt) und `{"type":"simulation.state","running":…}` |
 
 Die WebSocket-API des Browsers kann keinen `Authorization`-Header senden, daher steht das Token im
 Query-String und wird beim HTTP-Upgrade geprüft (ungültiges Token → `401`, bevor der Socket öffnet).
@@ -121,6 +123,15 @@ Query-String und wird beim HTTP-Upgrade geprüft (ungültiges Token → `401`, b
   Anfragen an PostgreSQL. Live-Positionen kommen ohnehin über den WebSocket, der Cache liefert nur den
   Anfangs-Snapshot. Da die Simulation alle 2 s Roboter bewegt, wird der
   Schlüssel etwa einmal pro Takt gelöscht; die TTL greift vor allem, wenn die Simulation ruht.
+- **Bewegung.** Bodengebundene Patrouillenroboter laufen auf einem Wegenetz, das einmalig aus
+  OpenStreetMap erzeugt wird (`api/scripts/build-patrol-network.js` → `api/src/data/patrolNetwork.json`,
+  526 Knoten im Umkreis von 450 m). Jeder Schritt ist zufällig 10–50 m lang; an Kreuzungen wird der
+  nächste Weg zufällig gewählt, umgekehrt wird nur in Sackgassen. Die Position im Netz (`edge_from`,
+  `edge_to`, `edge_offset_m`) wird in einer Transaktion mit Zeilensperre gelesen und geschrieben.
+  Kartendaten © OpenStreetMap-Mitwirkende, ODbL.
+- **Karte.** Der Roboter wird entlang der passierten Kreuzungen animiert, die Spur zeigt die letzten
+  ~100 m seines Wegs und verblasst mit der Entfernung; eine Legende erklärt Marker, Spur und Wege. Nach
+  einem Reconnect ist der Weg dazwischen unbekannt: Der Roboter springt, die Spur beginnt neu.
 - **Reihenfolge.** Ereignisse und Snapshots werden über `updated_at` zusammengeführt; eine ältere
   Meldung überschreibt nie eine neuere Position.
 - **Start/Stop.** Zustandswechsel laufen nacheinander, sodass zwei gleichzeitig klickende Tabs immer

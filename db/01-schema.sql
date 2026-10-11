@@ -11,6 +11,11 @@ CREATE TABLE robots (
   status     text NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'moving')),
   lat        double precision NOT NULL CHECK (lat BETWEEN -90 AND 90),
   lon        double precision NOT NULL CHECK (lon BETWEEN -180 AND 180),
+  -- Place on the patrol network: walking from node edge_from towards edge_to (OSM node ids).
+  -- NULL until the first move, which snaps the robot to the nearest node.
+  edge_from     text,
+  edge_to       text,
+  edge_offset_m double precision CHECK (edge_offset_m >= 0),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 

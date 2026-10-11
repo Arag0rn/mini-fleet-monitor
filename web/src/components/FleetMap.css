@@ -39,3 +39,71 @@
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+
+.fleet-map__legend {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--ink);
+  font: 500 0.75rem/1.2 var(--font-mono);
+  list-style: none;
+  pointer-events: none;
+}
+
+.fleet-map__legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fleet-map__symbol {
+  flex: none;
+  width: 1.5rem;
+  height: 0.75rem;
+  overflow: visible;
+}
+
+.fleet-map__symbol--moving path {
+  fill: var(--signal);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.fleet-map__symbol--idle circle {
+  fill: var(--muted);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.fleet-map__symbol--trail line {
+  stroke: var(--signal);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.fleet-map__symbol--network line {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+
+@media (max-width: 760px) {
+  /* Top right, so the OpenStreetMap attribution at the bottom stays visible */
+  .fleet-map__legend {
+    top: 0.5rem;
+    right: 0.5rem;
+    bottom: auto;
+    left: auto;
+    grid-template-columns: auto auto;
+    gap: 0.25rem 0.75rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}

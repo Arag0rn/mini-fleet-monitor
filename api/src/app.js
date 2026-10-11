@@ -7,6 +7,7 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
 const robotRoutes = require('./routes/robots');
 const simulationRoutes = require('./routes/simulation');
+const patrolNetworkRoutes = require('./routes/patrolNetwork');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get('/health', async (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/robots', robotRoutes);
 app.use('/simulation', simulationRoutes);
+app.use('/patrol-network', patrolNetworkRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

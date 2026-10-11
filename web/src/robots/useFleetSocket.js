@@ -37,7 +37,7 @@ export function useFleetSocket({ onRobot, onSimulation, onResync }) {
         } catch {
           return
         }
-        if (message.type === 'robot.updated') handlers.current.onRobot(message.robot)
+        if (message.type === 'robot.updated') handlers.current.onRobot(message.robot, message.via)
         else if (message.type === 'simulation.state') handlers.current.onSimulation(message.running)
       }
 

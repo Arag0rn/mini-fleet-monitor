@@ -122,6 +122,9 @@ Eine kleine, funktionsfähige Web-Anwendung, die:
 - **E6 + S1:** a 10 s cache against 2 s updates serves stale positions unless the move invalidates it.
   We invalidate on every move.
 - **D2 status:** not every robot moves on every tick, otherwise `idle` never appears.
+- **E3 "zufällig":** ground patrol robots walk the real roads and paths within 450 m of Mühlweg 44
+  (OpenStreetMap). Each step is a random 10–50 m; at every junction the next road is chosen at random
+  (no U-turn except at a dead end). Random, but robots never cross buildings or leave the site.
 - **F1:** frontend is plain JavaScript as the brief says "React (JS)"; the backend follows for one
   language across the repo.
 - **E4 + A3:** the WebSocket handshake is authenticated with the same JWT.
