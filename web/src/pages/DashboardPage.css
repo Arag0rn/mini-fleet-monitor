@@ -1,0 +1,43 @@
+.dashboard {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+}
+
+.dashboard__body {
+  display: grid;
+  grid-template-columns: 1fr minmax(18rem, 22rem);
+  min-height: 0;
+}
+
+.dashboard__heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dashboard__map {
+  position: relative;
+  min-height: 0;
+  background: var(--bg);
+}
+
+@media (max-width: 760px) {
+  .dashboard {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .dashboard__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 55vh auto;
+  }
+
+  .dashboard .roster {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}

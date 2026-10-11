@@ -21,6 +21,16 @@ function writeToken(token) {
   }
 }
 
+function emailFromToken(token) {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const bytes = Uint8Array.from(atob(payload), (char) => char.charCodeAt(0))
+    return JSON.parse(new TextDecoder().decode(bytes)).email ?? null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(readToken)
 
@@ -38,6 +48,9 @@ export function AuthProvider({ children }) {
     setToken(null)
   }, [])
 
-  const value = useMemo(() => ({ token, login, logout }), [token, login, logout])
+  const value = useMemo(
+    () => ({ token, email: token && emailFromToken(token), login, logout }),
+    [token, login, logout],
+  )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

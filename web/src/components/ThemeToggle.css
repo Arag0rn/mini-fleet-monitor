@@ -11,6 +11,7 @@
   font: 600 0.95rem/1 var(--font-display);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
   transition: border-color 150ms ease;
 }
