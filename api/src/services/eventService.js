@@ -1,18 +1,22 @@
 const { redis } = require('../db/redis');
 
-const ROBOT_UPDATES_CHANNEL = 'robots:updates';
+const FLEET_EVENTS_CHANNEL = 'fleet:events';
 
-async function publishRobotUpdates(robots) {
-  if (robots.length === 0) return;
+async function publish(events) {
+  if (events.length === 0) return;
   try {
-    await Promise.all(
-      robots.map((robot) =>
-        redis.publish(ROBOT_UPDATES_CHANNEL, JSON.stringify({ type: 'robot.updated', robot })),
-      ),
-    );
+    await Promise.all(events.map((event) => redis.publish(FLEET_EVENTS_CHANNEL, JSON.stringify(event))));
   } catch (err) {
-    console.error('Publishing robot updates failed:', err.message);
+    console.error('Publishing fleet events failed:', err.message);
   }
 }
 
-module.exports = { ROBOT_UPDATES_CHANNEL, publishRobotUpdates };
+function publishRobotUpdates(robots) {
+  return publish(robots.map((robot) => ({ type: 'robot.updated', robot })));
+}
+
+function publishSimulationState(running) {
+  return publish([{ type: 'simulation.state', running }]);
+}
+
+module.exports = { FLEET_EVENTS_CHANNEL, publishRobotUpdates, publishSimulationState };

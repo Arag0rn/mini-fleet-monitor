@@ -63,7 +63,7 @@ animation instead of rebuilding the layer.
  Simulation (every 2 s) ─┐
  POST /robots/:id/move ──┴─▶ robotService ──▶ PostgreSQL (robots, robot_positions)
                                    │
-                                   └─▶ Redis PUBLISH robots:updates
+                                   └─▶ Redis PUBLISH fleet:events
                                               │
                           Redis subscriber ◀──┘
                                    │
@@ -88,8 +88,10 @@ steel circles. The roster shows the same state as text: call sign, status, last 
 | `POST` | `/auth/login` | — | `{ email, password }` → `{ token, user }` (JWT, 1 h) |
 | `GET` | `/robots` | Bearer | all robots |
 | `POST` | `/robots/:id/move` | Bearer | moves the robot 10–50 m in a random direction |
+| `GET` | `/simulation` | Bearer | `{ running }` |
+| `POST` | `/simulation/start`, `/simulation/stop` | Bearer | starts or stops the simulation; stopping sets every robot to `idle` |
 | `GET` | `/health` | — | 200 when PostgreSQL and Redis answer, otherwise 503 |
-| `WS` | `/ws?token=<jwt>` | JWT in query string | pushes `{"type":"robot.updated","robot":{…}}` |
+| `WS` | `/ws?token=<jwt>` | JWT in query string | pushes `{"type":"robot.updated","robot":{…}}` and `{"type":"simulation.state","running":…}` |
 
 The browser WebSocket API cannot send an `Authorization` header, so the token travels in the query
 string and is verified during the HTTP upgrade (invalid token → `401` before the socket opens).
@@ -116,6 +118,10 @@ string and is verified during the HTTP upgrade (invalid token → `401` before t
   mainly matters when the simulation is idle.
 - **Ordering.** Events and snapshots are merged by `updated_at`; an older message never overwrites a
   newer position.
+- **Start/Stop.** Transitions run one after another, so two tabs clicking at once always end in the
+  state that was broadcast last. The state lives in the API process (one simulation timer); with
+  several API instances it would move to a separate worker. A robot moved via
+  `POST /robots/:id/move` while the simulation is stopped stays `moving` until the next Stop or tick.
 - **Resilience.** The API fails fast at startup without PostgreSQL or Redis, reconnects to Redis at
   runtime, keeps simulating while Redis is down, and shuts down gracefully on `SIGTERM`. The web app
   reconnects with backoff and resyncs with `GET /robots` after every reconnect.
@@ -162,5 +168,5 @@ request that could crash the API before any authentication, and Docker restartin
 | Bonus: Redis Pub/Sub instead of in-memory broadcast | ✅ |
 | Bonus: position history (`robot_positions`) | ✅ |
 | Bonus: deployable with Dockerfile + docker-compose | ✅ |
-| Bonus: Start/Stop simulation buttons | not yet |
+| Bonus: Start/Stop simulation buttons | ✅ |
 | Optional: `POST /robots` | not yet |

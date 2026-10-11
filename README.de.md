@@ -65,7 +65,7 @@ Animation an Ort und Stelle, statt den Layer neu aufzubauen.
  Simulation (alle 2 s) ──┐
  POST /robots/:id/move ──┴─▶ robotService ──▶ PostgreSQL (robots, robot_positions)
                                    │
-                                   └─▶ Redis PUBLISH robots:updates
+                                   └─▶ Redis PUBLISH fleet:events
                                               │
                           Redis-Subscriber ◀──┘
                                    │
@@ -91,8 +91,10 @@ Alter der Meldung.
 | `POST` | `/auth/login` | — | `{ email, password }` → `{ token, user }` (JWT, 1 h) |
 | `GET` | `/robots` | Bearer | alle Roboter |
 | `POST` | `/robots/:id/move` | Bearer | bewegt den Roboter 10–50 m in eine zufällige Richtung |
+| `GET` | `/simulation` | Bearer | `{ running }` |
+| `POST` | `/simulation/start`, `/simulation/stop` | Bearer | startet oder stoppt die Simulation; beim Stoppen werden alle Roboter `idle` |
 | `GET` | `/health` | — | 200, wenn PostgreSQL und Redis antworten, sonst 503 |
-| `WS` | `/ws?token=<jwt>` | JWT im Query-String | sendet `{"type":"robot.updated","robot":{…}}` |
+| `WS` | `/ws?token=<jwt>` | JWT im Query-String | sendet `{"type":"robot.updated","robot":{…}}` und `{"type":"simulation.state","running":…}` |
 
 Die WebSocket-API des Browsers kann keinen `Authorization`-Header senden, daher steht das Token im
 Query-String und wird beim HTTP-Upgrade geprüft (ungültiges Token → `401`, bevor der Socket öffnet).
@@ -121,6 +123,10 @@ Query-String und wird beim HTTP-Upgrade geprüft (ungültiges Token → `401`, b
   Schlüssel etwa einmal pro Takt gelöscht; die TTL greift vor allem, wenn die Simulation ruht.
 - **Reihenfolge.** Ereignisse und Snapshots werden über `updated_at` zusammengeführt; eine ältere
   Meldung überschreibt nie eine neuere Position.
+- **Start/Stop.** Zustandswechsel laufen nacheinander, sodass zwei gleichzeitig klickende Tabs immer
+  im zuletzt gesendeten Zustand enden. Der Zustand liegt im API-Prozess (ein Simulations-Timer); bei
+  mehreren API-Instanzen gehört er in einen eigenen Worker. Ein Roboter, der bei gestoppter Simulation
+  über `POST /robots/:id/move` bewegt wird, bleibt `moving` bis zum nächsten Stop oder Takt.
 - **Robustheit.** Die API bricht beim Start ohne PostgreSQL oder Redis sofort ab, verbindet sich im
   Betrieb neu mit Redis, simuliert weiter, während Redis ausfällt, und fährt bei `SIGTERM` sauber
   herunter. Die Web-App verbindet sich mit Backoff neu und synchronisiert nach jedem Reconnect über
@@ -172,5 +178,5 @@ ich erklären.
 | Bonus: Redis Pub/Sub statt In-Memory-Broadcast | ✅ |
 | Bonus: Positionshistorie (`robot_positions`) | ✅ |
 | Bonus: deploymentfähig mit Dockerfile + docker-compose | ✅ |
-| Bonus: Steuer-Buttons „Start/Stop Simulation“ | noch offen |
+| Bonus: Steuer-Buttons „Start/Stop Simulation“ | ✅ |
 | Optional: `POST /robots` | noch offen |

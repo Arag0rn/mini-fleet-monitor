@@ -1,7 +1,7 @@
 const { WebSocketServer, WebSocket } = require('ws');
 const { verifyToken } = require('../services/authService');
 const { subscriber } = require('../db/redis');
-const { ROBOT_UPDATES_CHANNEL } = require('../services/eventService');
+const { FLEET_EVENTS_CHANNEL } = require('../services/eventService');
 
 const WS_PATH = '/ws';
 const HEARTBEAT_MS = 30000;
@@ -58,7 +58,7 @@ async function attachRobotSocket(server) {
   }, HEARTBEAT_MS);
   wss.on('close', () => clearInterval(heartbeat));
 
-  await subscriber.subscribe(ROBOT_UPDATES_CHANNEL, (message) => {
+  await subscriber.subscribe(FLEET_EVENTS_CHANNEL, (message) => {
     for (const ws of wss.clients) {
       if (ws.readyState === WebSocket.OPEN) ws.send(message);
     }

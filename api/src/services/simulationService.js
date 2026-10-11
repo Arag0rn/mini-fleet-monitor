@@ -1,10 +1,12 @@
 const robotService = require('./robotService');
+const { publishSimulationState } = require('./eventService');
 
 const TICK_MS = 2000;
 const MOVE_PROBABILITY = 0.5;
 
 let timer = null;
 let currentTick = null;
+let transition = Promise.resolve();
 
 async function tick() {
   try {
@@ -40,4 +42,24 @@ function stop() {
   return currentTick ?? Promise.resolve();
 }
 
-module.exports = { start, stop };
+function isRunning() {
+  return timer !== null;
+}
+
+// Start/stop requests run one after another, so concurrent clicks cannot interleave.
+function setRunning(running) {
+  const next = transition.then(async () => {
+    if (running) start();
+    else await stop();
+    await publishSimulationState(running);
+    if (!running) await robotService.markIdleExcept([]);
+  });
+  transition = next.catch(() => {});
+  return next;
+}
+
+function settle() {
+  return transition;
+}
+
+module.exports = { start, stop, isRunning, setRunning, settle };

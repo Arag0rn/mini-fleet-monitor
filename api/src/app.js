@@ -6,6 +6,7 @@ const { redis } = require('./db/redis');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
 const robotRoutes = require('./routes/robots');
+const simulationRoutes = require('./routes/simulation');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.get('/health', async (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/robots', robotRoutes);
+app.use('/simulation', simulationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

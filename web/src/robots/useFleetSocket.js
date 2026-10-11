@@ -4,13 +4,13 @@ import { useAuth } from '../auth/useAuth.js'
 
 const MAX_RETRY_DELAY_MS = 5000
 
-export function useFleetSocket({ onRobot, onResync }) {
+export function useFleetSocket({ onRobot, onSimulation, onResync }) {
   const { token } = useAuth()
   const [connection, setConnection] = useState('connecting')
-  const handlers = useRef({ onRobot, onResync })
+  const handlers = useRef({ onRobot, onSimulation, onResync })
 
   useEffect(() => {
-    handlers.current = { onRobot, onResync }
+    handlers.current = { onRobot, onSimulation, onResync }
   })
 
   useEffect(() => {
@@ -38,6 +38,7 @@ export function useFleetSocket({ onRobot, onResync }) {
           return
         }
         if (message.type === 'robot.updated') handlers.current.onRobot(message.robot)
+        else if (message.type === 'simulation.state') handlers.current.onSimulation(message.running)
       }
 
       socket.onclose = () => {

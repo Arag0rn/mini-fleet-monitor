@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { formatAge, formatPosition } from '../robots/format.js'
+import SimulationControl from './SimulationControl.jsx'
 import './RobotRoster.css'
 
 function useNow(intervalMs) {
@@ -48,7 +49,7 @@ function RosterBody({ robots, status, onRetry, now }) {
   )
 }
 
-export default function RobotRoster({ robots, status, onRetry }) {
+export default function RobotRoster({ robots, status, onRetry, simulation }) {
   const now = useNow(1000)
   const moving = robots.filter((robot) => robot.status === 'moving').length
 
@@ -64,6 +65,7 @@ export default function RobotRoster({ robots, status, onRetry }) {
           </p>
         )}
       </div>
+      <SimulationControl {...simulation} />
       <RosterBody robots={robots} status={status} onRetry={onRetry} now={now} />
     </aside>
   )

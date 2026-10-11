@@ -20,11 +20,12 @@ async function start() {
 
 async function shutdown(signal) {
   console.log(`${signal} received, shutting down`);
-  await simulation.stop();
-  for (const client of wss?.clients ?? []) client.terminate();
-  wss?.close();
   server.close();
   server.closeAllConnections();
+  for (const client of wss?.clients ?? []) client.terminate();
+  wss?.close();
+  await simulation.settle();
+  await simulation.stop();
   await Promise.allSettled([pool.end(), redis.close(), subscriber.close()]);
   process.exit(0);
 }
