@@ -24,7 +24,7 @@ Danach **http://localhost:8080** öffnen und mit **`admin@test.com` / `test123`*
 | Web (React, nginx) | http://localhost:8080 | die Anwendung |
 | API (Express, WebSocket) | http://localhost:4000 | REST + `ws://localhost:4000/ws` |
 | PostgreSQL | `localhost:5433` | Benutzer / Passwort / Datenbank: `fleet` |
-| Redis | `localhost:6379` | Pub/Sub für Live-Updates |
+| Redis | `localhost:6379` | Cache für `GET /robots` und Pub/Sub für Live-Updates |
 
 Alle Ports sind an `127.0.0.1` gebunden. Schema und Demodaten (ein Benutzer, acht Roboter) werden
 beim ersten Start automatisch angelegt. `docker compose down -v` setzt alles zurück.
@@ -111,6 +111,14 @@ Query-String und wird beim HTTP-Upgrade geprüft (ungültiges Token → `401`, b
   + `INSERT` in die Historie), sodass gleichzeitige Bewegungen desselben Roboters kein Update
   verlieren.
 - **Redis Pub/Sub statt In-Memory-Broadcast** — Ereignisse erreichen die Clients jeder API-Instanz.
+- **Cache für `GET /robots`** (Cache-Aside, TTL 10 s, `X-Cache: HIT` / `MISS`). Jede Änderung an
+  einem Roboter löscht den Schlüssel. Eine Leseanfrage, die kurz vor einer Bewegung begonnen hat, kann
+  ihr älteres Ergebnis trotzdem nach dem Löschen schreiben (das übliche Cache-Aside-Race); dieser
+  Eintrag lebt bis zur nächsten Bewegung oder bis zur TTL, die die Veralterung auch dann begrenzt,
+  wenn ein Löschen verloren geht, während Redis nicht erreichbar ist. Ist Redis ausgefallen, gehen die
+  Anfragen an PostgreSQL. Live-Positionen kommen ohnehin über den WebSocket, der Cache liefert nur den
+  Anfangs-Snapshot. Da die Simulation alle 2 s Roboter bewegt, wird der
+  Schlüssel etwa einmal pro Takt gelöscht; die TTL greift vor allem, wenn die Simulation ruht.
 - **Reihenfolge.** Ereignisse und Snapshots werden über `updated_at` zusammengeführt; eine ältere
   Meldung überschreibt nie eine neuere Position.
 - **Robustheit.** Die API bricht beim Start ohne PostgreSQL oder Redis sofort ab, verbindet sich im
@@ -153,8 +161,8 @@ ich erklären.
 
 | Anforderung | Status |
 |---|---|
-| Node.js + Express, PostgreSQL, Redis (Pub/Sub), JWT, CORS, REST + WebSocket, Docker Compose | ✅ |
-| Redis als Cache für `GET /robots` (TTL 10 s) | noch offen |
+| Node.js + Express, PostgreSQL, Redis (Cache + Pub/Sub), JWT, CORS, REST + WebSocket, Docker Compose | ✅ |
+| Redis-Cache für `GET /robots` (TTL 10 s) | ✅ |
 | React (JS), OpenLayers-Karte, Login-Seite, geschütztes Dashboard, Live-Marker | ✅ |
 | Datenmodell `users`, `robots` (`idle` / `moving`) | ✅ |
 | `POST /auth/login`, `GET /robots`, `POST /robots/:id/move` (auch automatisch ausgeführt) | ✅ |

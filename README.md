@@ -23,7 +23,7 @@ Then open **http://localhost:8080** and sign in with **`admin@test.com` / `test1
 | Web (React, nginx) | http://localhost:8080 | the application |
 | API (Express, WebSocket) | http://localhost:4000 | REST + `ws://localhost:4000/ws` |
 | PostgreSQL | `localhost:5433` | user / password / database: `fleet` |
-| Redis | `localhost:6379` | Pub/Sub for live updates |
+| Redis | `localhost:6379` | cache for `GET /robots` and Pub/Sub for live updates |
 
 All ports are bound to `127.0.0.1`. The database schema and the demo data (one user, eight robots)
 are created automatically on the first start. `docker compose down -v` resets everything.
@@ -106,6 +106,14 @@ string and is verified during the HTTP upgrade (invalid token → `401` before t
 - **Atomic moves.** The move is a single data-modifying CTE (`UPDATE … RETURNING` + `INSERT` into
   the history), so concurrent moves of the same robot never lose an update.
 - **Redis Pub/Sub instead of an in-memory broadcast** — events reach clients of every API instance.
+- **Cache for `GET /robots`** (cache-aside, TTL 10 s, `X-Cache: HIT` / `MISS`). Every change to a
+  robot deletes the key. A read that started just before a move can still write its older result
+  after the delete (the usual cache-aside race); that entry lives until the next move or the TTL,
+  which also bounds staleness if a delete is lost while Redis is unreachable. If Redis is down,
+  requests go to PostgreSQL. Live positions come from the WebSocket anyway, so the cache only serves
+  the initial snapshot.
+  With the simulation moving robots every 2 s the key is invalidated about once per tick, so the TTL
+  mainly matters when the simulation is idle.
 - **Ordering.** Events and snapshots are merged by `updated_at`; an older message never overwrites a
   newer position.
 - **Resilience.** The API fails fast at startup without PostgreSQL or Redis, reconnects to Redis at
@@ -143,8 +151,8 @@ request that could crash the API before any authentication, and Docker restartin
 
 | Requirement | Status |
 |---|---|
-| Node.js + Express, PostgreSQL, Redis (Pub/Sub), JWT, CORS, REST + WebSocket, Docker Compose | ✅ |
-| Redis as a cache for `GET /robots` (TTL 10 s) | not yet |
+| Node.js + Express, PostgreSQL, Redis (cache + Pub/Sub), JWT, CORS, REST + WebSocket, Docker Compose | ✅ |
+| Redis cache for `GET /robots` (TTL 10 s) | ✅ |
 | React (JS), OpenLayers map, login page, protected dashboard, live markers | ✅ |
 | Data model `users`, `robots` (`idle` / `moving`) | ✅ |
 | `POST /auth/login`, `GET /robots`, `POST /robots/:id/move` (also run automatically) | ✅ |

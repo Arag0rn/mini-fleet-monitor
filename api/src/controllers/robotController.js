@@ -10,7 +10,8 @@ function parseRobotId(raw) {
 }
 
 async function list(req, res) {
-  res.json(await robotService.listRobots());
+  const { robots, fromCache } = await robotService.listRobots();
+  res.set('X-Cache', fromCache ? 'HIT' : 'MISS').json(robots);
 }
 
 async function move(req, res) {

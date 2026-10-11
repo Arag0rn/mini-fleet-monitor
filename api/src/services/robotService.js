@@ -1,6 +1,7 @@
 const pool = require('../db/pool');
 const HttpError = require('../utils/httpError');
 const { publishRobotUpdates } = require('./eventService');
+const robotCache = require('./robotCache');
 
 const MIN_STEP_M = 10;
 const MAX_STEP_M = 50;
@@ -27,16 +28,21 @@ function randomStep() {
 }
 
 async function listRobots() {
+  const cached = await robotCache.readRobots();
+  if (cached) return { robots: cached, fromCache: true };
+
   const { rows } = await pool.query(
     'SELECT id, name, status, lat, lon, updated_at FROM robots ORDER BY id',
   );
-  return rows;
+  await robotCache.writeRobots(rows);
+  return { robots: rows, fromCache: false };
 }
 
 async function moveRobot(id) {
   const { north, east } = randomStep();
   const { rows } = await pool.query(MOVE_SQL, [id, north, east]);
   if (!rows[0]) throw new HttpError(404, 'Robot not found');
+  await robotCache.invalidateRobots();
   await publishRobotUpdates(rows);
   return rows[0];
 }
@@ -53,6 +59,7 @@ async function markIdleExcept(movedIds) {
       RETURNING id, name, status, lat, lon, updated_at`,
     [movedIds],
   );
+  if (rows.length > 0) await robotCache.invalidateRobots();
   await publishRobotUpdates(rows);
   return rows;
 }
