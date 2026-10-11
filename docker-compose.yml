@@ -26,5 +26,40 @@ services:
       timeout: 3s
       retries: 10
 
+  api:
+    build: ./api
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgres://fleet:fleet@db:5432/fleet
+      REDIS_URL: redis://redis:6379
+      # Demo-only default so `docker compose up` works from a clean checkout; override it in .env.
+      JWT_SECRET: ${JWT_SECRET:-local-demo-only-secret-change-me-for-any-real-use-0001}
+      JWT_EXPIRES_IN: 1h
+      CORS_ORIGIN: http://localhost:8080
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure:5
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_API_URL: http://localhost:4000
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   pgdata:
