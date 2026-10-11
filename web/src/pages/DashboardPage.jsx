@@ -1,5 +1,6 @@
 import TopBar from '../components/TopBar.jsx'
 import RobotRoster from '../components/RobotRoster.jsx'
+import FleetMap from '../components/FleetMap.jsx'
 import { useRobots } from '../robots/useRobots.js'
 import './DashboardPage.css'
 
@@ -11,7 +12,9 @@ export default function DashboardPage() {
       <TopBar />
       <main className="dashboard__body">
         <h1 className="dashboard__heading">Patrol Robots</h1>
-        <section className="dashboard__map" aria-label="Map of the patrol area" />
+        <div className="dashboard__map">
+          <FleetMap robots={robots} />
+        </div>
         <RobotRoster robots={robots} status={status} onRetry={reload} />
       </main>
     </div>
