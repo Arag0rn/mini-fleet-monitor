@@ -17,8 +17,9 @@ export default function ThemeToggle() {
   const [isNight, setIsNight] = useState(() => document.documentElement.dataset.theme === 'dark')
 
   function toggle() {
-    applyTheme(isNight ? 'light' : 'dark')
-    setIsNight(!isNight)
+    const nextIsNight = document.documentElement.dataset.theme !== 'dark'
+    applyTheme(nextIsNight ? 'dark' : 'light')
+    setIsNight(nextIsNight)
   }
 
   return (
