@@ -24,7 +24,8 @@ async function login(email, password) {
 function verifyToken(token) {
   const payload = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] });
   const id = Number(payload.sub);
-  if (!Number.isInteger(id) || id < 1) throw new HttpError(401, 'Invalid token');
+  // Our tokens always expire; one without `exp` was not issued by login
+  if (!Number.isInteger(id) || id < 1 || typeof payload.exp !== 'number') throw new HttpError(401, 'Invalid token');
   return { id, email: payload.email };
 }
 

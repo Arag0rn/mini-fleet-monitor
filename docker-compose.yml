@@ -33,6 +33,7 @@ services:
       DATABASE_URL: postgres://fleet:fleet@db:5432/fleet
       REDIS_URL: redis://redis:6379
       # Demo-only default so `docker compose up` works from a clean checkout; override it in .env.
+      # Public demo fallback; keep in sync with JWT_SECRET_DEMO in api/src/config.js
       JWT_SECRET: ${JWT_SECRET:-local-demo-only-secret-change-me-for-any-real-use-0001}
       JWT_EXPIRES_IN: 1h
       CORS_ORIGIN: http://localhost:8080

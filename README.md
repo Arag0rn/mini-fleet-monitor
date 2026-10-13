@@ -30,8 +30,9 @@ are created automatically on the first start. `docker compose down -v` resets ev
 once after pulling a change to `db/*.sql`, since the scripts only run on an empty volume.
 
 `JWT_SECRET` falls back to a clearly labelled **demo-only** value so the stack starts from a clean
-checkout. Set your own in a `.env` file (see [`.env.example`](.env.example)) for anything beyond a
-local demo.
+checkout. This value is public, so anyone can sign tokens with it; the API logs a warning when it is
+used. Set your own in a `.env` file (see [`.env.example`](.env.example)) for anything beyond a local
+demo.
 
 ### Local development without Docker for API and web
 
@@ -96,7 +97,9 @@ steel circles. The roster shows the same state as text: call sign, status, last 
 | `WS` | `/ws?token=<jwt>` | JWT in query string | pushes `{"type":"robot.updated","robot":{…},"via":[[lat,lon],…]}` (`via`: junctions passed, so the map follows the road) and `{"type":"simulation.state","running":…}` |
 
 The browser WebSocket API cannot send an `Authorization` header, so the token travels in the query
-string and is verified during the HTTP upgrade (invalid token → `401` before the socket opens).
+string and is verified during the HTTP upgrade (foreign `Origin` → `403`, invalid token → `401`, both
+before the socket opens). The nginx CSP allows connections only to `http://localhost:4000`; if you
+change `VITE_API_URL`, change `connect-src` in `web/security-headers.conf` too.
 
 ## Stack
 
@@ -136,7 +139,9 @@ string and is verified during the HTTP upgrade (invalid token → `401` before t
   runtime, keeps simulating while Redis is down, and shuts down gracefully on `SIGTERM`. The web app
   reconnects with backoff and resyncs with `GET /robots` after every reconnect.
 - **Security.** Parameterised SQL, bcrypt with a timing-safe login path (unknown email and wrong
-  password take the same time), JWT pinned to HS256, the same token check for REST and WebSocket.
+  password take the same time), JWT pinned to HS256 and required to expire, the same token check for
+  REST and WebSocket. The WebSocket also checks `Origin`, because CORS does not cover it; nginx sends
+  a Content-Security-Policy, `X-Frame-Options: DENY`, `nosniff` and `no-referrer`, and hides its version.
 - **Fonts are self-hosted** (SIL OFL, licences in `web/public/fonts`) — no visitor IP is sent to
   Google (GDPR).
 - **Accessibility.** Status is shown by shape, colour and text; the map is keyboard-operable;

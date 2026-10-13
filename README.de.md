@@ -31,8 +31,9 @@ beim ersten Start automatisch angelegt. `docker compose down -v` setzt alles zur
 Änderung an `db/*.sql` einmal ausführen, da die Skripte nur auf einem leeren Volume laufen.
 
 `JWT_SECRET` fällt auf einen ausdrücklich als **nur für die Demo** gekennzeichneten Wert zurück,
-damit der Stack direkt nach dem Klonen startet. Für alles über eine lokale Demo hinaus ein eigenes
-Secret in einer `.env`-Datei setzen (siehe [`.env.example`](.env.example)).
+damit der Stack direkt nach dem Klonen startet. Dieser Wert ist öffentlich, jeder kann damit Tokens
+signieren; die API schreibt bei seiner Verwendung eine Warnung ins Log. Für alles über eine lokale
+Demo hinaus ein eigenes Secret in einer `.env`-Datei setzen (siehe [`.env.example`](.env.example)).
 
 ### Lokale Entwicklung ohne Docker für API und Web
 
@@ -99,7 +100,10 @@ Alter der Meldung.
 | `WS` | `/ws?token=<jwt>` | JWT im Query-String | sendet `{"type":"robot.updated","robot":{…},"via":[[lat,lon],…]}` (`via`: passierte Kreuzungen, damit die Karte dem Weg folgt) und `{"type":"simulation.state","running":…}` |
 
 Die WebSocket-API des Browsers kann keinen `Authorization`-Header senden, daher steht das Token im
-Query-String und wird beim HTTP-Upgrade geprüft (ungültiges Token → `401`, bevor der Socket öffnet).
+Query-String und wird beim HTTP-Upgrade geprüft (fremder `Origin` → `403`, ungültiges Token → `401`,
+beides bevor der Socket öffnet). Die CSP von nginx erlaubt Verbindungen nur zu
+`http://localhost:4000`; wer `VITE_API_URL` ändert, muss auch `connect-src` in
+`web/security-headers.conf` anpassen.
 
 ## Stack
 
@@ -143,8 +147,10 @@ Query-String und wird beim HTTP-Upgrade geprüft (ungültiges Token → `401`, b
   herunter. Die Web-App verbindet sich mit Backoff neu und synchronisiert nach jedem Reconnect über
   `GET /robots`.
 - **Sicherheit.** Parametrisiertes SQL, bcrypt mit zeitlich gleichem Login-Pfad (unbekannte E-Mail
-  und falsches Passwort dauern gleich lang), JWT fest auf HS256, dieselbe Token-Prüfung für REST und
-  WebSocket.
+  und falsches Passwort dauern gleich lang), JWT fest auf HS256 und mit Pflicht-Ablaufzeit, dieselbe
+  Token-Prüfung für REST und WebSocket. Der WebSocket prüft zusätzlich `Origin`, weil CORS dort nicht
+  greift; nginx sendet eine Content-Security-Policy, `X-Frame-Options: DENY`, `nosniff` und
+  `no-referrer` und verbirgt seine Version.
 - **Schriften liegen im Projekt** (SIL OFL, Lizenzen in `web/public/fonts`) — keine Besucher-IP geht
   an Google (DSGVO).
 - **Barrierefreiheit.** Der Status wird über Form, Farbe und Text gezeigt; die Karte ist per Tastatur

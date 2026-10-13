@@ -1,4 +1,5 @@
 const { WebSocketServer, WebSocket } = require('ws');
+const config = require('../config');
 const { verifyToken } = require('../services/authService');
 const { subscriber } = require('../db/redis');
 const { FLEET_EVENTS_CHANNEL } = require('../services/eventService');
@@ -27,6 +28,9 @@ async function attachRobotSocket(server) {
       return rejectUpgrade(socket, '400 Bad Request');
     }
     if (url.pathname !== WS_PATH) return rejectUpgrade(socket, '404 Not Found');
+    // CORS does not apply to WebSocket. Browsers always send Origin, so a foreign page is refused here.
+    const { origin } = request.headers;
+    if (origin && origin !== config.corsOrigin) return rejectUpgrade(socket, '403 Forbidden');
 
     try {
       verifyToken(url.searchParams.get('token') ?? '');
